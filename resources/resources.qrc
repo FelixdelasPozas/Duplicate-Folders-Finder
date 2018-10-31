@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="/Duplicates">
+    <file>folder.ico</file>
+	<file>folder.svg</file>
+	<file>magnifying-glass.svg</file>
+	<file>boost.ico</file>
+	<file>qt.ico</file>
+  </qresource>
+</RCC>
