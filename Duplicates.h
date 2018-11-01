@@ -86,11 +86,11 @@ class Duplicates
 	   */
 	  void saveSettings();
 
-	  /** \brief Process a directories recursively.
+	  /** \brief Process a directories recursively and returns the size in megabytes.
 	   * \param[in] directoryPath Directory path.
 	   *
 	   */
-	  void processDirectory(const QString &directoryPath);
+	  const float processDirectory(const QString &directoryPath);
 
 	  static const QString FOLDER; /** Folder settings text key. */
 
@@ -100,9 +100,9 @@ class Duplicates
 	   */
 	  struct DirectoryInfo
 	  {
-	      QString name;
-	      QString path;
-	      unsigned long long size;
+	      QString name; /** directory basename.  */
+	      QString path; /** directory full path. */
+	      float   size; /** size in megabytes.   */
 	  };
 
 	  /** \brief Returns the hash of the given DirectoryInfo struct.

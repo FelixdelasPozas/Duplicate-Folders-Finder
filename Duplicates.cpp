@@ -29,13 +29,14 @@
 
 const QString Duplicates::FOLDER{"Folder"}; /** Selected folder settings key. */
 
+const unsigned long long MEGABYTE{1024*1024};
+
 //-----------------------------------------------------------------
 Duplicates::Duplicates()
 {
   setupUi(this);
 
   m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  m_table->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
 
   connectSignals();
 
@@ -111,6 +112,8 @@ void Duplicates::scan()
 {
   m_table->clearContents();
   m_table->setRowCount(0);
+  m_collisions->setText("0");
+  m_inserted  ->setText("0");
 
   m_directories.clear();
 
@@ -127,6 +130,8 @@ void Duplicates::scan()
       processDirectory(entry.absoluteFilePath());
 
       m_progress->setValue(100*i/dirEntries.size());
+
+      QApplication::processEvents();
     }
   }
 
@@ -177,9 +182,10 @@ void Duplicates::saveSettings()
 }
 
 //--------------------------------------------------------------------
-void Duplicates::processDirectory(const QString& directoryPath)
+const float Duplicates::processDirectory(const QString& directoryPath)
 {
   const QString separator{"/"};
+  float size = 0.f;
 
   const QDir directory{directoryPath};
   Q_ASSERT(directory.exists());
@@ -187,30 +193,34 @@ void Duplicates::processDirectory(const QString& directoryPath)
   const auto dirEntries = directory.entryInfoList(QDir::Filter::NoDotAndDotDot|QDir::Filter::AllDirs);
   for(auto entry: dirEntries)
   {
-    processDirectory(entry.absoluteFilePath());
+    size += processDirectory(entry.absoluteFilePath());
   }
 
-  unsigned long long size = 0;
   const auto fileEntries = directory.entryInfoList(QDir::Filter::Files);
   for(auto entry: fileEntries)
   {
-    if(entry.suffix().toLower().compare("mp3") == 0)
-    {
-      size += entry.size();
-    }
+    size += static_cast<float>(entry.size())/MEGABYTE;
   }
-
-  if(size == 0) return;
 
   DirectoryInfo info;
   info.path = directory.absolutePath();
   info.name = info.path.split(separator).last().toLower();
   info.size = size;
 
+  if((info.name.compare("Variado", Qt::CaseInsensitive) == 0) ||
+     (info.name.compare("Various", Qt::CaseInsensitive) == 0) ||
+     (info.name.startsWith("CD ", Qt::CaseInsensitive))       ||
+     size == 0)
+  {
+    return 0;
+  }
+
   auto hashValue = hash(info);
 
   if(m_directories.keys().contains(hashValue))
   {
+    m_collisions->setText(tr("%1").arg(m_collisions->text().toInt() + 1));
+
     for(const auto entry: m_directories.value(hashValue))
     {
       if(entry.name == info.name)
@@ -243,4 +253,8 @@ void Duplicates::processDirectory(const QString& directoryPath)
   }
 
   m_directories[hashValue] << info;
+
+  m_inserted->setText(tr("%1").arg(m_inserted->text().toInt() + 1));
+
+  return size;
 }
