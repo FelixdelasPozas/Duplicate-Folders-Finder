@@ -231,8 +231,9 @@ const float Duplicates::processDirectory(const QString& directoryPath)
         m_table->insertRow(rows);
 
         auto parts = entry.path.split(separator);
+        auto name  = parts.last();
 
-        auto item = new QTableWidgetItem {tr("%1").arg(entry.name)}; //Name
+        auto item = new QTableWidgetItem {tr("%1").arg(name)}; //Name
         m_table->setItem(rows, 0, item);
 
         item = new QTableWidgetItem{tr("%1").arg(entry.path.left(entry.path.size()-entry.name.size()))}; //Parent 1
