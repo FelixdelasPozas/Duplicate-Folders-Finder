@@ -97,7 +97,7 @@ void Duplicates::openFolderSelectionDialog()
     {
       QMessageBox msgBox;
       msgBox.setWindowTitle(tr("Error"));
-      msgBox.setWindowIcon(QIcon("Duplicates/folder.svg"));
+      msgBox.setWindowIcon(QIcon(":/Duplicates/folder.svg"));
       msgBox.setText(tr("The selected directory is invalid"));
       msgBox.setIcon(QMessageBox::Icon::Critical);
       msgBox.exec();
@@ -112,8 +112,7 @@ void Duplicates::scan()
 {
   m_table->clearContents();
   m_table->setRowCount(0);
-  m_collisions->setText("0");
-  m_inserted  ->setText("0");
+  m_inserted->setText("0");
 
   m_directories.clear();
 
@@ -123,6 +122,8 @@ void Duplicates::scan()
   QDir directory{m_folder->text()};
   if(directory.exists() && directory.isReadable())
   {
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+
     const auto dirEntries = directory.entryInfoList(QDir::Filter::NoDotAndDotDot|QDir::Filter::AllDirs);
     for(int i = 0; i < dirEntries.size(); ++i)
     {
@@ -133,6 +134,8 @@ void Duplicates::scan()
 
       QApplication::processEvents();
     }
+
+    QApplication::restoreOverrideCursor();
   }
 
   m_progress->setValue(0);
@@ -219,8 +222,6 @@ const float Duplicates::processDirectory(const QString& directoryPath)
 
   if(m_directories.keys().contains(hashValue))
   {
-    m_collisions->setText(tr("%1").arg(m_collisions->text().toInt() + 1));
-
     for(const auto entry: m_directories.value(hashValue))
     {
       if(entry.name == info.name)

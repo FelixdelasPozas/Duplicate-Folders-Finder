@@ -51,13 +51,13 @@ int main(int argc, char **argv)
 
   // allow only one instance running
   QSharedMemory guard;
-  guard.setKey("ITSDemoHeadlight");
+  guard.setKey("DuplicatesFFind");
 
   if (!guard.create(1))
   {
     QMessageBox msgbox;
-    msgbox.setWindowIcon(QIcon(":/Headlight/application.ico"));
-    msgbox.setWindowTitle(QObject::tr("ITS Headlight"));
+    msgbox.setWindowIcon(QIcon(":/Duplicates/folder.svg"));
+    msgbox.setWindowTitle(QObject::tr("Duplicates Folder Finder"));
     msgbox.setIcon(QMessageBox::Information);
     msgbox.setText(QObject::tr("An instance is already running!"));
     msgbox.setStandardButtons(QMessageBox::Ok);
