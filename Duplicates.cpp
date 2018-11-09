@@ -153,6 +153,7 @@ void Duplicates::scan()
   else
   {
     msgBox.setText(tr("Found %1 duplicates!").arg(m_table->rowCount()));
+    m_table->resizeColumnsToContents();
   }
 
   msgBox.exec();
@@ -231,10 +232,10 @@ const float Duplicates::processDirectory(const QString& directoryPath)
 
         auto parts = entry.path.split(separator);
 
-        auto item = new QTableWidgetItem {tr("%1").arg(parts.last())}; //Name
+        auto item = new QTableWidgetItem {tr("%1").arg(entry.name)}; //Name
         m_table->setItem(rows, 0, item);
 
-        item = new QTableWidgetItem{tr("%1").arg(parts[parts.size()-2])}; //Parent 1
+        item = new QTableWidgetItem{tr("%1").arg(entry.path.left(entry.path.size()-entry.name.size()))}; //Parent 1
         m_table->setItem(rows, 1, item);
 
         item = new QTableWidgetItem{tr("%1").arg(entry.size)}; //Size 1
@@ -242,7 +243,7 @@ const float Duplicates::processDirectory(const QString& directoryPath)
 
         parts = info.path.split(separator);
 
-        item = new QTableWidgetItem{tr("%1").arg(parts[parts.size()-2])}; //Parent 2
+        item = new QTableWidgetItem{tr("%1").arg(info.path.left(info.path.size()-info.name.size()))}; //Parent 2
         m_table->setItem(rows, 3, item);
 
         item = new QTableWidgetItem{tr("%1").arg(info.size)}; //Size 2
