@@ -5,11 +5,12 @@ Duplicated Folders Finder
 - [Description](#description)
 - [Compilation](#compilation-requirements)
 - [Install](#install)
+- [Screenshots](#screenshots)
 - [Repository information](#repository-information)
 
 # Description
-Little tool to search and list the names and sizes of folders with the same name hanging from the same root in the a directory tree. Basically a tool to report duplicates in storage
-folders that follow some naming rules. 
+Little tool to search and list the names and sizes of folders with the same name hanging from the same root in the a directory tree. So basically a tool to report duplicates in storage
+folders that follow some naming rules. It doesn't compare directory contents, only reports directories with the same name. 
 
 # Compilation requirements
 ## To build the tool:
@@ -24,6 +25,9 @@ The following libraries are required:
 # Install
 The only current option is build from source as binaries are not provided.
 
+# Screenshots
+No screenshots.
+
 # Repository information
 
 **Version**: 1.0.0
@@ -34,7 +38,7 @@ The only current option is build from source as binaries are not provided.
 
 | Language                     |files          |blank        |comment           |code  |
 |:-----------------------------|--------------:|------------:|-----------------:|-----:|
-| C++                          |   3           | 81          | 65               | 228  |
-| C/C++ Header                 |   2           | 32          | 87               |  58  |
+| C++                          |   3           | 89          | 67               | 268  |
+| C/C++ Header                 |   2           | 34          | 94               |  60  |
 | CMake                        |   1           | 19          |  6               |  46  |
-| **Total**                    | **6**         | **132**     | **158**          | **332** |
+| **Total**                    | **6**         | **142**     | **167**          | **374** |
