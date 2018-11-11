@@ -8,7 +8,8 @@ Duplicated Folders Finder
 - [Repository information](#repository-information)
 
 # Description
-Little tool to search and list the names and sizes of folders with the same name hanging from the same root in the a directory tree. 
+Little tool to search and list the names and sizes of folders with the same name hanging from the same root in the a directory tree. Basically a tool to report duplicates in storage
+folders that follow some naming rules. 
 
 # Compilation requirements
 ## To build the tool:
@@ -21,7 +22,7 @@ The following libraries are required:
 * [Boost libraries](https://www.boost.org/).
 
 # Install
-The only current option is build from source as binaries are not provided. 
+The only current option is build from source as binaries are not provided.
 
 # Repository information
 

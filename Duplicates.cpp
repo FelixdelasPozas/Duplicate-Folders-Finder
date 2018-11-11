@@ -26,6 +26,10 @@
 #include <QMessageBox>
 #include <QApplication>
 #include <QSettings>
+#include <QMenu>
+#include <QAction>
+#include <QVariant>
+#include <QDesktopServices>
 
 const QString Duplicates::FOLDER{"Folder"}; /** Selected folder settings key. */
 
@@ -37,6 +41,7 @@ Duplicates::Duplicates()
   setupUi(this);
 
   m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  m_table->setContextMenuPolicy(Qt::CustomContextMenu);
 
   connectSignals();
 
@@ -56,6 +61,7 @@ void Duplicates::connectSignals()
   connect(m_quit,       SIGNAL(pressed()), this, SLOT(close()));
   connect(m_folderPick, SIGNAL(pressed()), this, SLOT(openFolderSelectionDialog()));
   connect(m_search,     SIGNAL(pressed()), this, SLOT(scan()));
+  connect(m_table,      SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onMenuRequested(const QPoint &)));
 }
 
 //-----------------------------------------------------------------
@@ -186,6 +192,21 @@ void Duplicates::saveSettings()
 }
 
 //--------------------------------------------------------------------
+void Duplicates::onActionTriggered()
+{
+  auto object = qobject_cast<QAction *>(sender());
+
+  if(object)
+  {
+    auto folder = object->data().toString();
+    if(!folder.isEmpty())
+    {
+      QDesktopServices::openUrl(QUrl::fromLocalFile(folder));
+    }
+  }
+}
+
+//--------------------------------------------------------------------
 const float Duplicates::processDirectory(const QString& directoryPath)
 {
   const QString separator{"/"};
@@ -236,7 +257,8 @@ const float Duplicates::processDirectory(const QString& directoryPath)
         auto item = new QTableWidgetItem {tr("%1").arg(name)}; //Name
         m_table->setItem(rows, 0, item);
 
-        item = new QTableWidgetItem{tr("%1").arg(entry.path.left(entry.path.size()-entry.name.size()))}; //Parent 1
+        auto parent1 = QDir::toNativeSeparators(entry.path.left(entry.path.size()-entry.name.size()));
+        item = new QTableWidgetItem{tr("%1").arg(parent1)}; //Parent 1
         m_table->setItem(rows, 1, item);
 
         item = new QTableWidgetItem{tr("%1").arg(entry.size)}; //Size 1
@@ -244,7 +266,8 @@ const float Duplicates::processDirectory(const QString& directoryPath)
 
         parts = info.path.split(separator);
 
-        item = new QTableWidgetItem{tr("%1").arg(info.path.left(info.path.size()-info.name.size()))}; //Parent 2
+        auto parent2 = QDir::toNativeSeparators(info.path.left(info.path.size()-info.name.size()));
+        item = new QTableWidgetItem{tr("%1").arg(parent2)}; //Parent 2
         m_table->setItem(rows, 3, item);
 
         item = new QTableWidgetItem{tr("%1").arg(info.size)}; //Size 2
@@ -260,4 +283,31 @@ const float Duplicates::processDirectory(const QString& directoryPath)
   m_inserted->setText(tr("%1").arg(m_inserted->text().toInt() + 1));
 
   return size;
+}
+
+//--------------------------------------------------------------------
+void Duplicates::onMenuRequested(const QPoint& pos)
+{
+  auto item = m_table->itemAt(pos);
+  if(item)
+  {
+    auto row = item->row();
+    auto original = m_table->item(row,1)->text() + m_table->item(row,0)->text() + QDir::separator();
+    auto duplicate = m_table->item(row,3)->text() + m_table->item(row,0)->text() + QDir::separator();
+
+    QMenu menu{this};
+
+    auto action = menu.addAction(tr("Open original folder '%1'").arg(original));
+    action->setData(original);
+    connect(action, SIGNAL(triggered(bool)), this, SLOT(onActionTriggered()));
+
+    action = menu.addAction(tr("Open duplicated folder '%1'").arg(duplicate));
+    action->setData(duplicate);
+    connect(action, SIGNAL(triggered(bool)), this, SLOT(onActionTriggered()));
+
+    menu.addSeparator();
+    menu.addAction(tr("Cancel"));
+
+    menu.exec(m_table->viewport()->mapToGlobal(pos));
+  }
 }

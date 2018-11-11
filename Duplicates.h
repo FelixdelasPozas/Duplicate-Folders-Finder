@@ -70,6 +70,17 @@ class Duplicates
 	   */
 	  void scan();
 
+	  /** \brief Shows context menu for the selected position of the table widget.
+	   * \param[in] pos Click position of the request.
+	   *
+	   */
+	  void onMenuRequested(const QPoint &pos);
+
+	  /** \brief Helper method to open the folder specified in the custom context menu of the table.
+	   *
+	   */
+	  void onActionTriggered();
+
 	private:
 	  /** \brief Helper method to connect UI signals.
 	   *
