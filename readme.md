@@ -9,7 +9,7 @@ Duplicated Folders Finder
 - [Repository information](#repository-information)
 
 # Description
-Little tool to search and list the names and sizes of folders with the same name hanging from the same root in the a directory tree. So basically a tool to report duplicates in storage
+Little tool to search and list the names and sizes of folders with the same name hanging from the same root in the directory tree. So basically a tool to report duplicates in storage
 folders that follow some naming rules. It doesn't compare directory contents, only reports directories with the same name. 
 
 # Compilation requirements
