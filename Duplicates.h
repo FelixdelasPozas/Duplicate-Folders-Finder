@@ -25,14 +25,88 @@
 
 // Qt
 #include <QMainWindow>
+#include <QThread>
 #include <QHash>
+#include <QDir>
 
 // Boost
+#include <boost/functional/hash/extensions.hpp>
 #include <boost/functional/hash.hpp>
+
+// C++
+#include <crtdefs.h>
+#include <string.h>
 
 class QAction;
 class QMenu;
 class QPlainTextEdit;
+
+/** \class ScanThread
+ * \brief Thread for scanning a path.
+ *
+ */
+class ScanThread
+: public QThread
+{
+    Q_OBJECT
+  public:
+    /** \brief ScanThread class constructor.
+     * \param[in] directory Starting directory.
+     * \param[in] parent Raw pointer of the object parent of this one.
+     *
+     */
+    explicit ScanThread(const QDir &directory, QObject *parent = nullptr);
+
+    /** \brief ScanThread class virtual destructor.
+     *
+     */
+    virtual ~ScanThread()
+    {};
+
+    /** \brief Returns the number of inspected directories.
+     *
+     */
+    int inspected() const
+    { return m_directories.size(); }
+
+  signals:
+    void progress(int);
+    void found(const QString &name, const QString &parent1, const float size1, const QString &parent2, const float size2);
+
+  protected:
+    virtual void run() override;
+
+  private:
+    /** \brief Process a directories recursively and returns the size in megabytes.
+     * \param[in] directoryPath Directory path.
+     *
+     */
+    const float processDirectory(const QString &directoryPath);
+
+    /** \struct DirectoryInfo
+     * \brief Holds directory information.
+     *
+     */
+    struct DirectoryInfo
+    {
+      QString name; /** directory basename.  */
+      QString path; /** directory full path. */
+      float   size; /** size in megabytes.   */
+    };
+
+    /** \brief Returns the hash of the given DirectoryInfo struct.
+     * \param[in] info DirectoryInfo struct reference.
+     *
+     */
+    std::size_t hash(const DirectoryInfo &info)
+    {
+      boost::hash<std::string> hasher;
+      return hasher(info.name.toStdString());
+    };
+
+    const QDir m_directory; /** starting directory. */
+    QHash<std::size_t, QList<struct DirectoryInfo>> m_directories; /** stores the directory information mapped with its hash. */
+};
 
 /** \class Duplicates
  * \brief Main dialog implementation.
@@ -81,6 +155,21 @@ class Duplicates
 	   */
 	  void onActionTriggered();
 
+	  /** \brief Inserts a row in the table with the given info.
+	   * \param[in] name Directory name.
+	   * \param[in] parent1 First parent name.
+	   * \param[in] size1 First parent size in megabytes.
+     * \param[in] parent2 Second parent name.
+     * \param[in] size2 Second parent size in megabytes.
+     *
+	   */
+	  void onFound(const QString &name, const QString &parent1, const float size1, const QString &parent2, const float size2);
+
+	  /** \brief Updates the GUI when the scan thread finishes.
+	   *
+	   */
+	  void onThreadFinished();
+
 	private:
 	  /** \brief Helper method to connect UI signals.
 	   *
@@ -97,36 +186,7 @@ class Duplicates
 	   */
 	  void saveSettings();
 
-	  /** \brief Process a directories recursively and returns the size in megabytes.
-	   * \param[in] directoryPath Directory path.
-	   *
-	   */
-	  const float processDirectory(const QString &directoryPath);
-
 	  static const QString FOLDER; /** Folder settings text key. */
-
-	  /** \struct DirectoryInfo
-	   * \brief Holds directory information.
-	   *
-	   */
-	  struct DirectoryInfo
-	  {
-	      QString name; /** directory basename.  */
-	      QString path; /** directory full path. */
-	      float   size; /** size in megabytes.   */
-	  };
-
-	  /** \brief Returns the hash of the given DirectoryInfo struct.
-	   * \param[in] info DirectoryInfo struct reference.
-	   *
-	   */
-	  std::size_t hash(const DirectoryInfo &info)
-	  {
-	    boost::hash<std::string> hasher;
-	    return hasher(info.name.toStdString());
-	  };
-
-	  QHash<std::size_t, QList<struct DirectoryInfo>> m_directories; /** stores the directory information mapped with its hash. */
 };
 
 #endif /* DUPLICATES_H_ */

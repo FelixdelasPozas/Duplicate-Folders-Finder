@@ -173,7 +173,7 @@
       <item>
        <widget class="QLabel" name="label_6">
         <property name="text">
-         <string>Folders inspected:</string>
+         <string>Duplicates found</string>
         </property>
        </widget>
       </item>
@@ -196,6 +196,20 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Folders inspected:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="m_inspected">
+        <property name="text">
+         <string>0</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>

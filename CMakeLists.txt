@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 2.8.6)
 
 # Version Number
 set (DUPLICATES_VERSION_MAJOR 1)
-set (DUPLICATES_VERSION_MINOR 0)
+set (DUPLICATES_VERSION_MINOR 1)
 set (DUPLICATES_VERSION_PATCH 0)
 
 # Find includes in corresponding build directories

@@ -30,6 +30,7 @@
 #include <QAction>
 #include <QVariant>
 #include <QDesktopServices>
+#include <QDebug>
 
 const QString Duplicates::FOLDER{"Folder"}; /** Selected folder settings key. */
 
@@ -42,6 +43,7 @@ Duplicates::Duplicates()
 
   m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   m_table->setContextMenuPolicy(Qt::CustomContextMenu);
+  m_table->horizontalHeader()->resizeSections(QHeaderView::ResizeMode::ResizeToContents);
 
   connectSignals();
 
@@ -120,51 +122,19 @@ void Duplicates::scan()
   m_table->setRowCount(0);
   m_inserted->setText("0");
 
-  m_directories.clear();
-
   m_progress->setEnabled(true);
   m_progress->setValue(0);
 
+  m_search->setEnabled(false);
+
   QDir directory{m_folder->text()};
-  if(directory.exists() && directory.isReadable())
-  {
-    QApplication::setOverrideCursor(Qt::WaitCursor);
 
-    const auto dirEntries = directory.entryInfoList(QDir::Filter::NoDotAndDotDot|QDir::Filter::AllDirs);
-    for(int i = 0; i < dirEntries.size(); ++i)
-    {
-      auto entry = dirEntries.at(i);
-      processDirectory(entry.absoluteFilePath());
+  auto thread = new ScanThread(directory, this);
+  connect(thread, SIGNAL(progress(int)), m_progress, SLOT(setValue(int)));
+  connect(thread, SIGNAL(found(const QString &, const QString &, const float, const QString &, const float)), this, SLOT(onFound(const QString &, const QString &, const float, const QString &, const float)));
+  connect(thread, SIGNAL(finished()), this, SLOT(onThreadFinished()));
 
-      m_progress->setValue(100*i/dirEntries.size());
-
-      QApplication::processEvents();
-    }
-
-    QApplication::restoreOverrideCursor();
-  }
-
-  m_progress->setValue(0);
-  m_progress->setEnabled(false);
-
-  QMessageBox msgBox;
-  msgBox.setIcon(QMessageBox::Icon::Information);
-  msgBox.setWindowTitle(tr("Search results"));
-  msgBox.setWindowIcon(QIcon(":/Duplicates/magnifying-glass.svg"));
-
-  if(m_table->rowCount() == 0)
-  {
-    msgBox.setText(tr("No duplicates found!"));
-  }
-  else
-  {
-    msgBox.setText(tr("Found %1 duplicates!").arg(m_table->rowCount()));
-    m_table->resizeColumnsToContents();
-  }
-
-  msgBox.exec();
-
-  m_search->setDown(false);
+  thread->start();
 }
 
 //--------------------------------------------------------------------
@@ -175,6 +145,51 @@ void Duplicates::loadSettings()
   QDir directory{settings.value(FOLDER, QApplication::applicationDirPath()).toString()};
 
   m_folder->setText(QDir::toNativeSeparators(directory.absolutePath()));
+}
+
+//--------------------------------------------------------------------
+void Duplicates::onThreadFinished()
+{
+  auto thread = qobject_cast<ScanThread *>(sender());
+  if(thread)
+  {
+    QApplication::restoreOverrideCursor();
+
+    m_search->setEnabled(true);
+
+    m_progress->setValue(0);
+    m_progress->setEnabled(false);
+
+    QMessageBox msgBox;
+    msgBox.setIcon(QMessageBox::Icon::Information);
+    msgBox.setWindowTitle(tr("Search results"));
+    msgBox.setWindowIcon(QIcon(":/Duplicates/magnifying-glass.svg"));
+
+    if(m_table->rowCount() == 0)
+    {
+      msgBox.setText(tr("No duplicates found!"));
+    }
+    else
+    {
+      msgBox.setText(tr("Found %1 duplicates!").arg(m_table->rowCount()));
+      for (int c = 0; c < m_table->horizontalHeader()->count(); ++c)
+      {
+        m_table->horizontalHeader()->setSectionResizeMode(c, QHeaderView::Stretch);
+      }
+    }
+
+    msgBox.exec();
+
+    m_search->setDown(false);
+
+    m_inspected->setText(QString::number(thread->inspected()));
+
+    thread->deleteLater();
+  }
+  else
+  {
+    qWarning() << "Unable to cast to ScanThread";
+  }
 }
 
 //--------------------------------------------------------------------
@@ -207,7 +222,7 @@ void Duplicates::onActionTriggered()
 }
 
 //--------------------------------------------------------------------
-const float Duplicates::processDirectory(const QString& directoryPath)
+const float ScanThread::processDirectory(const QString& directoryPath)
 {
   const QString separator{"/"};
   float size = 0.f;
@@ -248,30 +263,15 @@ const float Duplicates::processDirectory(const QString& directoryPath)
     {
       if(entry.name == info.name)
       {
-        const auto rows = m_table->rowCount();
-        m_table->insertRow(rows);
-
         auto parts = entry.path.split(separator);
         auto name  = parts.last();
 
-        auto item = new QTableWidgetItem {tr("%1").arg(name)}; //Name
-        m_table->setItem(rows, 0, item);
-
         auto parent1 = QDir::toNativeSeparators(entry.path.left(entry.path.size()-entry.name.size()));
-        item = new QTableWidgetItem{tr("%1").arg(parent1)}; //Parent 1
-        m_table->setItem(rows, 1, item);
-
-        item = new QTableWidgetItem{tr("%1").arg(entry.size)}; //Size 1
-        m_table->setItem(rows, 2, item);
-
         parts = info.path.split(separator);
 
         auto parent2 = QDir::toNativeSeparators(info.path.left(info.path.size()-info.name.size()));
-        item = new QTableWidgetItem{tr("%1").arg(parent2)}; //Parent 2
-        m_table->setItem(rows, 3, item);
 
-        item = new QTableWidgetItem{tr("%1").arg(info.size)}; //Size 2
-        m_table->setItem(rows, 4, item);
+        emit found(name, parent1, entry.size, parent2, info.size);
 
         break;
       }
@@ -279,8 +279,6 @@ const float Duplicates::processDirectory(const QString& directoryPath)
   }
 
   m_directories[hashValue] << info;
-
-  m_inserted->setText(tr("%1").arg(m_inserted->text().toInt() + 1));
 
   return size;
 }
@@ -305,9 +303,56 @@ void Duplicates::onMenuRequested(const QPoint& pos)
     action->setData(duplicate);
     connect(action, SIGNAL(triggered(bool)), this, SLOT(onActionTriggered()));
 
-    menu.addSeparator();
-    menu.addAction(tr("Cancel"));
-
     menu.exec(m_table->viewport()->mapToGlobal(pos));
   }
+}
+
+//--------------------------------------------------------------------
+ScanThread::ScanThread(const QDir& directory, QObject* parent)
+: QThread(parent)
+, m_directory{directory}
+{
+}
+
+//--------------------------------------------------------------------
+void ScanThread::run()
+{
+  if(m_directory.exists() && m_directory.isReadable())
+  {
+    const auto dirEntries = m_directory.entryInfoList(QDir::Filter::NoDotAndDotDot|QDir::Filter::AllDirs);
+    for(int i = 0; i < dirEntries.size(); ++i)
+    {
+      auto entry = dirEntries.at(i);
+      processDirectory(entry.absoluteFilePath());
+
+      emit progress(100*i/dirEntries.size());
+    }
+  }
+}
+
+//--------------------------------------------------------------------
+void Duplicates::onFound(const QString& name, const QString& parent1, const float size1, const QString& parent2, const float size2)
+{
+  auto thread = qobject_cast<ScanThread *>(sender());
+  if(thread) m_inspected->setText(QString::number(thread->inspected()));
+
+  const auto rows = m_table->rowCount();
+  m_table->insertRow(rows);
+
+  auto item = new QTableWidgetItem {tr("%1").arg(name)}; //Name
+  m_table->setItem(rows, 0, item);
+
+  item = new QTableWidgetItem{tr("%1").arg(parent1)}; //Parent 1
+  m_table->setItem(rows, 1, item);
+
+  item = new QTableWidgetItem{tr("%1").arg(size1)}; //Size 1
+  m_table->setItem(rows, 2, item);
+
+  item = new QTableWidgetItem{tr("%1").arg(parent2)}; //Parent 2
+  m_table->setItem(rows, 3, item);
+
+  item = new QTableWidgetItem{tr("%1").arg(size2)}; //Size 2
+  m_table->setItem(rows, 4, item);
+
+  m_inserted->setText(tr("%1").arg(m_inserted->text().toInt() + 1));
 }
