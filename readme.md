@@ -30,7 +30,7 @@ No screenshots.
 
 # Repository information
 
-**Version**: 1.0.0
+**Version**: 1.1.0
 
 **Status**: finished
 
@@ -38,7 +38,7 @@ No screenshots.
 
 | Language                     |files          |blank        |comment           |code  |
 |:-----------------------------|--------------:|------------:|-----------------:|-----:|
-| C++                          |   3           | 89          | 67               | 268  |
-| C/C++ Header                 |   2           | 34          | 94               |  60  |
+| C++                          |   3           | 96          | 71               | 302  |
+| C/C++ Header                 |   2           | 42          | 121              |  85  |
 | CMake                        |   1           | 19          |  6               |  46  |
-| **Total**                    | **6**         | **142**     | **167**          | **374** |
+| **Total**                    | **6**         | **157**     | **198**          | **433** |
